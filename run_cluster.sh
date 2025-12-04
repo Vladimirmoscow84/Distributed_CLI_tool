@@ -10,7 +10,7 @@ QUORUM=2
 # Запуск узлов в фоне
 PIDS=()
 for PORT in "${PORTS[@]}"; do
-  # Формируем peers: все порты кроме текущего, с localhost
+
   PEERS=""
   for P in "${PORTS[@]}"; do
     if [ "$P" != "$PORT" ]; then
