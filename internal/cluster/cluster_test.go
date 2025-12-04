@@ -30,7 +30,6 @@ func TestProcessShardsQuorum(t *testing.T) {
 		t.Fatalf("expected 2 shard results for quorum, got %d", len(results))
 	}
 
-	// Проверяем, что в результатах действительно есть совпадения
 	found := 0
 	for _, r := range results {
 		found += len(r.Lines)
