@@ -4,33 +4,21 @@ import (
 	"bufio"
 	"io"
 	"regexp"
+
+	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/model"
 )
-
-// Параметры поиска
-type Config struct {
-	Pattern    string //строка для поиска
-	IgnoreCase bool   //флаг игнорирования регситра
-	ShowNumber bool   //необходимость показывания номера строки
-	Invert     bool   //необходимость инвертирования совпадения
-}
-
-// результат работы grep
-// потом будет расширен!!!
-type Result struct {
-	Lines []string
-}
 
 //Run - функция use-case, которая компилирует регулярное выражение, читает построчно входной поток, применяет правила совпадения и возвращает результат
 
-func Run(cfg Config, r io.Reader) (Result, error) {
+func Run(cfg model.GrepConfig, r io.Reader) (model.GrepResult, error) {
 	reg, err := compilePattern(cfg.Pattern, cfg.IgnoreCase)
 	if err != nil {
-		return Result{}, err
+		return model.GrepResult{}, err
 	}
 	scanner := bufio.NewScanner(r)
 
 	lineNo := 0
-	result := Result{}
+	result := model.GrepResult{}
 
 	for scanner.Scan() {
 		lineNo++
@@ -50,7 +38,7 @@ func Run(cfg Config, r io.Reader) (Result, error) {
 	}
 	err = scanner.Err()
 	if err != nil {
-		return Result{}, err
+		return model.GrepResult{}, err
 	}
 	return result, nil
 
