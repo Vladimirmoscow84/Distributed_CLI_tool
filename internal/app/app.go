@@ -1,11 +1,11 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/logger"
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/model"
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/mygrep"
 )
@@ -19,10 +19,15 @@ type Params struct {
 	FilePath   string //если пусто, то читается из  stdin
 }
 
-func Run(p Params) error {
+func Run(p Params, log logger.Logger) error {
+	if log == nil {
+		log = logger.NopLogger{}
+	}
+	log.Info("[app] start")
 	reader, closer, err := openinput(p.FilePath)
 	if err != nil {
-		return nil
+		log.Error("[app] failed to open input")
+		return err
 	}
 	if closer != nil {
 		defer closer.Close()
@@ -34,12 +39,21 @@ func Run(p Params) error {
 		Invert:     p.Invert,
 	}
 
-	result, err := mygrep.Run(cfg, reader)
+	log.Info("[app] running mygrep")
+	result, err := mygrep.Run(cfg, reader, log)
 	if err != nil {
+		log.Error("[app] failed mygrep")
 		return err
 	}
 
-	return writeOut(os.Stdout, result)
+	log.Info("[app] writening output")
+
+	err = writeOut(os.Stdout, result)
+	if err != nil {
+		log.Error("[app] failed to write output")
+	}
+	log.Info("[app] finished successfully")
+	return nil
 }
 
 // openInput открывает файл, если нет файла, то возвращает stdin
@@ -54,13 +68,13 @@ func openinput(path string) (t io.Reader, closer io.Closer, err error) {
 	return f, f, nil
 }
 
-// вывод в stdout
+// writeOut печатает результат в writerer
 func writeOut(w io.Writer, res model.GrepResult) error {
-	if w == nil {
-		return errors.New("nil writer")
-	}
 	for _, line := range res.Lines {
-		fmt.Fprintln(w, line)
+		_, err := fmt.Fprintln(w, line)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
