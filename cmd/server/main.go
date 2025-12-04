@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/app"
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/logger"
@@ -22,6 +23,10 @@ func main() {
 	showNumber := flag.Bool("n", false, "show line numbers")
 	invert := flag.Bool("v", false, "invert match")
 	filePath := flag.String("file", "", "path to input file (optional)")
+	clusterMode := flag.Bool("cluster", false, "enable cluster mode")
+	quorum := flag.Int("quorum", 1, "quorum size for cluster mode")
+	peers := flag.String("peers", "", "comma-separated list of peer addresses")
+	port := flag.Int("port", 8080, "local node port")
 
 	flag.Parse()
 
@@ -33,7 +38,7 @@ func main() {
 
 	var logg logger.Logger = stdLogger{}
 
-	logg.Info("main: application started")
+	logg.Info("[main] application started")
 
 	params := app.Params{
 		Pattern:    *pattern,
@@ -41,12 +46,17 @@ func main() {
 		ShowNumber: *showNumber,
 		Invert:     *invert,
 		FilePath:   *filePath,
+		Cluster:    *clusterMode,
+		Quorum:     *quorum,
+		Peers:      strings.Split(*peers, ","),
+		Port:       *port,
 	}
 
-	if err := app.Run(params, logg); err != nil {
-		logg.Error("main: application failed")
+	err := app.Run(params, logg)
+	if err != nil {
+		logg.Error("[main] application failed")
 		os.Exit(1)
 	}
 
-	logg.Info("main: application finished")
+	logg.Info("[main] application finished")
 }

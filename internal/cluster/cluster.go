@@ -2,55 +2,77 @@ package cluster
 
 import (
 	"bytes"
-	"sync"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/logger"
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/model"
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/mygrep"
+	"github.com/gin-gonic/gin"
 )
 
 type Cluster struct {
-	Logger    logger.Logger
-	Quorum    int
-	ShardChan chan model.ShardResult
+	Logger logger.Logger
+	Quorum int
+	Peers  []string // адреса других узлов
 }
 
-// ProcessShards запускает параллельную обработку шардов через mygrep
+// ProcessShards распределяет шарды по локалке и сети, ждёт кворум
 func (c *Cluster) ProcessShards(shards []model.Shard, cfg model.GrepConfig) []model.ShardResult {
-	if c.Logger == nil {
-		c.Logger = logger.NopLogger{}
-	}
-
-	c.ShardChan = make(chan model.ShardResult, len(shards))
-	var wg sync.WaitGroup
+	results := make([]model.ShardResult, 0, len(shards))
 
 	for _, shard := range shards {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			res, err := mygrep.Run(cfg, bytes.NewReader(shard.Data), c.Logger)
-			if err != nil {
-				c.Logger.Error("[cluster] failed to process shard")
-				return
+		// локальная обработка
+		res, _ := mygrep.Run(cfg, bytes.NewReader(shard.Data), c.Logger)
+		results = append(results, model.ShardResult{ID: shard.ID, Lines: res.Lines})
+
+		// отправка на peers
+		for _, peer := range c.Peers {
+			c.Logger.Info(fmt.Sprintf("[cluster client] sending shard to http://%s/process", peer))
+			if err := c.sendShard(peer, shard); err != nil {
+				c.Logger.Error(fmt.Sprintf("[cluster client] failed to send shard to %s: %v", peer, err))
 			}
-			c.ShardChan <- model.ShardResult{ID: shard.ID, Lines: res.Lines}
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(c.ShardChan)
-	}()
-
-	// Сбор результатов до достижения кворума
-	results := make([]model.ShardResult, 0)
-	for r := range c.ShardChan {
-		results = append(results, r)
-		if len(results) >= c.Quorum {
-			c.Logger.Info("cluster: quorum reached")
-			break
 		}
 	}
 
 	return results
+}
+
+func (c *Cluster) sendShard(peer string, shard model.Shard) error {
+	data, _ := json.Marshal(shard)
+	resp, err := http.Post(fmt.Sprintf("http://%s/process", peer), "application/json", bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// StartServer запускает Gin HTTP сервер для приема shards
+func (c *Cluster) StartServer(port int) {
+	r := gin.Default()
+
+	r.POST("/process", func(ctx *gin.Context) {
+		var shard model.Shard
+		if err := ctx.BindJSON(&shard); err != nil {
+			c.Logger.Error("failed to decode shard")
+			ctx.Status(400)
+			return
+		}
+
+		c.Logger.Info(fmt.Sprintf("[cluster server] received shard %d", shard.ID))
+		cfg := model.GrepConfig{Pattern: "Spartak"} // можно прокинуть через тело запроса
+		res, _ := mygrep.Run(cfg, bytes.NewReader(shard.Data), c.Logger)
+
+		ctx.JSON(200, model.ShardResult{ID: shard.ID, Lines: res.Lines})
+	})
+
+	c.Logger.Info(fmt.Sprintf("[cluster server] listening on :%d", port))
+	r.Run(fmt.Sprintf(":%d", port))
 }

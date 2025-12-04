@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -18,9 +17,11 @@ type Params struct {
 	IgnoreCase bool
 	ShowNumber bool
 	Invert     bool
-	FilePath   string //если пусто, то читается из  stdin
-	UseCluster bool
+	FilePath   string
+	Cluster    bool
 	Quorum     int
+	Peers      []string
+	Port       int
 }
 
 func Run(p Params, log logger.Logger) error {
@@ -43,59 +44,38 @@ func Run(p Params, log logger.Logger) error {
 		Invert:     p.Invert,
 	}
 
-	if !p.UseCluster {
-		log.Info("[app] running mygrep")
+	if p.Cluster {
+		log.Info("[app] running in cluster mode")
+
+		c := cluster.Cluster{
+			Logger: log,
+			Quorum: p.Quorum,
+			Peers:  p.Peers,
+		}
+
+		// запуск HTTP-сервер для приема shard-ов
+		go c.StartServer(p.Port)
+
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			log.Error("[app] failed to read input")
+			return err
+		}
+
+		shards := []model.Shard{{ID: 0, Data: data}}
+
+		results := c.ProcessShards(shards, cfg)
+
+		return writeShardsOut(os.Stdout, results)
+	} else {
+		log.Info("[app] running in local mode")
 		result, err := mygrep.Run(cfg, reader, log)
 		if err != nil {
 			log.Error("[app] failed mygrep")
 			return err
 		}
-
-		log.Info("[app] writening output")
-
-		err = writeOut(os.Stdout, result)
-		if err != nil {
-			log.Error("[app] failed to write output")
-		}
-		log.Info("[app] finished successfully")
-		return nil
+		return writeOut(os.Stdout, result)
 	}
-
-	log.Info("[app] running in cluster mode")
-
-	scanner := bufio.NewScanner(reader)
-	shards := make([]model.Shard, 0)
-	id := 1
-
-	for scanner.Scan() {
-		shards = append(shards, model.Shard{
-			ID:   id,
-			Data: append(scanner.Bytes(), '\n'),
-		})
-		id++
-	}
-
-	c := cluster.Cluster{
-		Logger: log,
-		Quorum: p.Quorum,
-	}
-
-	results := c.ProcessShards(shards, cfg)
-
-	final := model.GrepResult{}
-	for _, r := range results {
-		final.Lines = append(final.Lines, r.Lines...)
-	}
-
-	log.Info("[app] writing cluster output")
-	err = writeOut(os.Stdout, final)
-	if err != nil {
-		log.Error("[app] failed to write cluster output")
-		return err
-	}
-
-	log.Info("[app] finished successfully (cluster)")
-	return nil
 }
 
 // openInput открывает файл, если нет файла, то возвращает stdin
@@ -118,5 +98,17 @@ func writeOut(w io.Writer, res model.GrepResult) error {
 			return err
 		}
 	}
+	return nil
+}
+func writeShardsOut(w io.Writer, res []model.ShardResult) error {
+	for _, r := range res {
+		for _, line := range r.Lines {
+			_, err := fmt.Fprintln(w, line)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }

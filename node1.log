@@ -1,0 +1,35 @@
+2025/12/05 00:33:43 [INFO] [main] application started
+2025/12/05 00:33:43 [INFO] [app] start
+2025/12/05 00:33:43 [INFO] [app] running in cluster mode
+2025/12/05 00:33:43 [INFO] [mygrep] start processing
+2025/12/05 00:33:43 [INFO] [mygrep] processing finished
+2025/12/05 00:33:43 [DEBUG] [mygrep] found lines count = 10
+2025/12/05 00:33:43 [INFO] [cluster client] sending shard to http://localhost:8082/process
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /process                  --> github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/cluster.(*Cluster).StartServer.func1 (3 handlers)
+2025/12/05 00:33:43 [INFO] [cluster server] listening on :8081
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8081
+2025/12/05 00:33:43 [INFO] [cluster server] received shard 0
+2025/12/05 00:33:43 [INFO] [mygrep] start processing
+2025/12/05 00:33:43 [INFO] [mygrep] processing finished
+2025/12/05 00:33:43 [DEBUG] [mygrep] found lines count = 10
+[GIN] 2025/12/05 - 00:33:43 | 200 |     340.581µs |             ::1 | POST     "/process"
+2025/12/05 00:33:43 [ERROR] [cluster client] failed to send shard to localhost:8082: Post "http://localhost:8082/process": dial tcp [::1]:8082: connect: connection refused
+Spartak Moscow won the match yesterday The team played with great energy Fans of Spartak Moscow cheered loudly Red-and-white colors dominated the stadium Spartak Moscow's striker scored two goals The coach praised the team's defense
+Spartak Moscow will play against Dynamo next week Fans are buying tickets for the next Spartak match Spartak Moscow's goalkeeper made amazing saves
+The stadium atmosphere was electric Spartak Moscow celebrates its anniversary this month Local media covered Spartak Moscow's victory extensively The rivalry with CSKA Moscow is intense Spartak Moscow's training sessions are open to media
+The supporters' club organized a parade for Spartak Moscow
+Spartak Moscow's youth academy is producing talented players Fans chant Spartak Moscow songs throughout the game Spartak Moscow signed a new midfielder The team captain is giving interviews after matches
+Spartak Moscow's history dates back over 90 years
+Tickets for Spartak Moscow matches sell out quickly
+Spartak Moscow's legend players are honored in the hall of fame
+Fans wear Spartak Moscow jerseys on match day
+Spartak Moscow's fans create large banners in the stands
+2025/12/05 00:33:43 [INFO] [main] application finished
