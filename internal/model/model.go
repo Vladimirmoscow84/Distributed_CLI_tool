@@ -1,15 +1,27 @@
 package model
 
-// Параметры поиска
 type GrepConfig struct {
-	Pattern    string //строка для поиска
-	IgnoreCase bool   //флаг игнорирования регситра
-	ShowNumber bool   //необходимость показывания номера строки
-	Invert     bool   //необходимость инвертирования совпадения
+	Pattern    string
+	IgnoreCase bool
+	ShowNumber bool
+	Invert     bool
 }
 
-// результат работы grep
-// потом будет расширен!!!
 type GrepResult struct {
 	Lines []string
+}
+
+type Shard struct {
+	ID   int
+	Data []byte
+}
+
+type ShardResult struct {
+	ID    int
+	Lines []string
+}
+
+type ClusterConfig struct {
+	Quorum int
+	Peers  []string
 }

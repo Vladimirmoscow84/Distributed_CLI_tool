@@ -8,7 +8,7 @@ import (
 	"github.com/Vladimirmoscow84/Distributed_CLI_tool/internal/model"
 )
 
-func BasicTest(t *testing.T) {
+func TestBasic(t *testing.T) {
 	input := "spartak\nchampion\nspartak forever"
 	cfg := model.GrepConfig{
 		Pattern:    "spartak",
@@ -27,11 +27,11 @@ func BasicTest(t *testing.T) {
 	}
 }
 
-func IgnoreCaseTest(t *testing.T) {
-	input := "spartak\nchampion\nSPARTAK"
+func TestIgnoreCase(t *testing.T) {
+	input := "Spartak\nchan\nSPARTAK"
 
 	cfg := model.GrepConfig{
-		Pattern:    "hello",
+		Pattern:    "spartak",
 		IgnoreCase: true,
 	}
 
@@ -45,7 +45,7 @@ func IgnoreCaseTest(t *testing.T) {
 	}
 }
 
-func InvertTest(t *testing.T) {
+func TestInvert(t *testing.T) {
 	input := "spartak\narsenal\norel"
 
 	cfg := model.GrepConfig{
@@ -63,7 +63,7 @@ func InvertTest(t *testing.T) {
 	}
 }
 
-func ShowNumberTest(t *testing.T) {
+func TestShowNumber(t *testing.T) {
 	input := "spartak\ncska\nspartak"
 
 	cfg := model.GrepConfig{
@@ -81,7 +81,7 @@ func ShowNumberTest(t *testing.T) {
 	}
 }
 
-func InvalidRegexTest(t *testing.T) {
+func TestInvalidRegex(t *testing.T) {
 	cfg := model.GrepConfig{
 		Pattern: "([",
 	}
